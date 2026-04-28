@@ -16,7 +16,7 @@ export class StudySession {
   @Column()
   startedDate: Date;
 
-  @Column()
+  @Column({ nullable: true })
   stoppedDate: Date;
 
   @Column({ nullable: true })
