@@ -8,6 +8,7 @@ import { User } from './entities/user.entity';
 import { StudySession } from './entities/studySession.entity';
 import { DailySummary } from './entities/dailySummary.entity';
 import { ConfigModule } from '@nestjs/config';
+import { StudySessionModule } from './study-session/study-session.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ConfigModule } from '@nestjs/config';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    StudySessionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
