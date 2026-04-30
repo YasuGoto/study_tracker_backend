@@ -13,12 +13,12 @@ export class StudySession {
   @Column()
   userId: number;
 
-  @Column()
+  @Column({ type: 'timestamp' })
   startedDate: Date;
 
-  @Column({ nullable: true })
-  stoppedDate: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  stoppedDate: Date | null;
 
-  @Column({ nullable: true })
-  duration: number;
+  @Column({ type: 'integer', nullable: true })
+  duration: number | null;
 }
