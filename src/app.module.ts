@@ -2,6 +2,12 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { User } from './entities/user.entity';
+import { StudySession } from './entities/studySession.entity';
+import { DailySummary } from './entities/dailySummary.entity';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -12,8 +18,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       username: 'gotoyasuko',
       password: '',
       database: 'study_tracker',
-      entities: [],
+      entities: [User, StudySession, DailySummary],
       synchronize: true,
+    }),
+    AuthModule,
+    UsersModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
     }),
   ],
   controllers: [AppController],
