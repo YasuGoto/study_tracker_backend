@@ -11,7 +11,8 @@ import { ConfigModule } from '@nestjs/config';
 import { StudySessionModule } from './study-session/study-session.module';
 import { DailySummaryModule } from './daily-summary/daily-summary.module';
 import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-store';
+import { redisStore } from 'cache-manager-ioredis-yet';
+import Keyv from 'keyv';
 
 @Module({
   imports: [
@@ -31,11 +32,34 @@ import { redisStore } from 'cache-manager-redis-store';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    CacheModule.register({
+    CacheModule.registerAsync({
       isGlobal: true,
-      store: redisStore,
-      host: 'localhost',
-      port: 6379,
+      useFactory: async () => {
+        // NestJS @nestjs/cache-manager v3 は `stores` のみ参照する（`store` は無視される）
+        const redis = await redisStore({
+          host: process.env.REDIS_HOST ?? '127.0.0.1',
+          port: Number(process.env.REDIS_PORT ?? 6379),
+        });
+        // Keyv は store に delete / clear が必須。cache-manager-ioredis-yet は del / reset（型定義に未記載）
+        const redisCompat = redis as typeof redis & {
+          del: (key: string) => Promise<unknown>;
+          reset: () => Promise<void>;
+        };
+        const keyvStore = {
+          ...redis,
+          delete: (key: string) => redisCompat.del(key),
+          clear: async () => {
+            await redisCompat.reset();
+          },
+        };
+        return {
+          stores: [
+            new Keyv({
+              store: keyvStore,
+            }),
+          ],
+        };
+      },
     }),
     StudySessionModule,
     DailySummaryModule,

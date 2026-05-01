@@ -41,7 +41,13 @@ export class DailySummaryService {
     });
 
     if (summary) {
-      await this.cacheManager.set(cacheKey, summary, 60 * 60);
+      try {
+        // cache-manager v7 + Keyv の TTL はミリ秒
+      await this.cacheManager.set(cacheKey, summary, 3600 * 1000);
+        console.log('キャッシュに保存しました:', cacheKey);
+      } catch (error) {
+        console.error('キャッシュ保存エラー:', error);
+      }
     }
 
     return summary;
