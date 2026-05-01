@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { DailySummary } from '../entities/dailySummary.entity';
 import { StudySession } from '../entities/studySession.entity';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class DailySummaryService {
@@ -11,6 +13,8 @@ export class DailySummaryService {
     private studySessionRepository: Repository<StudySession>,
     @InjectRepository(DailySummary)
     private dailySummaryRepository: Repository<DailySummary>,
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
   ) {}
 
   /**
@@ -20,14 +24,27 @@ export class DailySummaryService {
    * @returns DailySummary または null（データがない場合）
    */
   async getSummary(userId: number, date: Date): Promise<DailySummary | null> {
+    const cacheKey = `daily-summary:${userId}:${date.toISOString().split('T')[0]}`;
+
+    const cached = await this.cacheManager.get<DailySummary>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const dayStart = new Date(date);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(date);
     dayEnd.setHours(23, 59, 59, 999);
 
-    return this.dailySummaryRepository.findOne({
+    const summary = await this.dailySummaryRepository.findOne({
       where: { userId, date: Between(dayStart, dayEnd) },
     });
+
+    if (summary) {
+      await this.cacheManager.set(cacheKey, summary, 60 * 60);
+    }
+
+    return summary;
   }
 
   /**
