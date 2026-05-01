@@ -9,6 +9,9 @@ import { StudySession } from './entities/studySession.entity';
 import { DailySummary } from './entities/dailySummary.entity';
 import { ConfigModule } from '@nestjs/config';
 import { StudySessionModule } from './study-session/study-session.module';
+import { DailySummaryController } from './daily-summary/daily-summary.controller';
+import { DailySummaryModule } from './daily-summary/daily-summary.module';
+import { StudySessionController } from './study-session/study-session.controller';
 
 @Module({
   imports: [
@@ -28,8 +31,9 @@ import { StudySessionModule } from './study-session/study-session.module';
       isGlobal: true,
     }),
     StudySessionModule,
+    DailySummaryModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, DailySummaryController, StudySessionController],
   providers: [AppService],
 })
 export class AppModule {}
