@@ -8,6 +8,43 @@ import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class DailySummaryService {
+  private static readonly JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+  /**
+   * JST基準の「日付キー」(YYYY-MM-DD) を返す。
+   * サーバーのタイムゾーンに依存しない。
+   */
+  private toJstDateKey(date: Date): string {
+    const shifted = new Date(
+      date.getTime() + DailySummaryService.JST_OFFSET_MS,
+    );
+    const y = shifted.getUTCFullYear();
+    const m = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(shifted.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  /**
+   * JST基準でその日の開始/終了(UTC Date)を返す。
+   * 例: 2026-05-01(JST) の 00:00:00.000〜23:59:59.999 を表す Date(UTC)。
+   */
+  private getJstDayRange(date: Date): { dayStart: Date; dayEnd: Date } {
+    console.log('input date', date);
+    const shifted = new Date(
+      date.getTime() + DailySummaryService.JST_OFFSET_MS,
+    );
+    console.log('shifted', shifted);
+    const y = shifted.getUTCFullYear();
+    const m = shifted.getUTCMonth();
+    const d = shifted.getUTCDate();
+    const dayStartMs = Date.UTC(y, m, d) - DailySummaryService.JST_OFFSET_MS;
+    console.log('dayStartMs', dayStartMs);
+    console.log('Date.UTC(y, m, d)', Date.UTC(y, m, d));
+    const dayEndMs = dayStartMs + 24 * 60 * 60 * 1000 - 1;
+    console.log('dayEndMs', dayEndMs);
+    return { dayStart: new Date(dayStartMs), dayEnd: new Date(dayEndMs) };
+  }
+
   constructor(
     @InjectRepository(StudySession)
     private studySessionRepository: Repository<StudySession>,
@@ -24,26 +61,27 @@ export class DailySummaryService {
    * @returns DailySummary または null（データがない場合）
    */
   async getSummary(userId: number, date: Date): Promise<DailySummary | null> {
-    const cacheKey = `daily-summary:${userId}:${date.toISOString().split('T')[0]}`;
+    const dateKey = this.toJstDateKey(date);
+    const cacheKey = `daily-summary:${userId}:${dateKey}`;
 
     const cached = await this.cacheManager.get<DailySummary>(cacheKey);
     if (cached) {
       return cached;
     }
 
-    const dayStart = new Date(date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(23, 59, 59, 999);
+    const { dayStart, dayEnd } = this.getJstDayRange(date);
+    console.log('dayStart', dayStart);
+    console.log('dayEnd', dayEnd);
 
     const summary = await this.dailySummaryRepository.findOne({
       where: { userId, date: Between(dayStart, dayEnd) },
     });
+    console.log('summary', summary);
 
     if (summary) {
       try {
         // cache-manager v7 + Keyv の TTL はミリ秒
-      await this.cacheManager.set(cacheKey, summary, 3600 * 1000);
+        await this.cacheManager.set(cacheKey, summary, 3600 * 1000);
         console.log('キャッシュに保存しました:', cacheKey);
       } catch (error) {
         console.error('キャッシュ保存エラー:', error);
@@ -63,10 +101,9 @@ export class DailySummaryService {
     userId: number,
     date: Date,
   ): Promise<DailySummary | null> {
-    const dayStart = new Date(date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(23, 59, 59, 999);
+    const { dayStart, dayEnd } = this.getJstDayRange(date);
+    console.log('dayStart', dayStart);
+    console.log('dayEnd', dayEnd);
 
     const studySessions = await this.studySessionRepository.find({
       where: { userId },
