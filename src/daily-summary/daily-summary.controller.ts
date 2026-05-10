@@ -5,6 +5,7 @@ import {
   Post,
   Request,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { DailySummaryService } from './daily-summary.service';
 import { DailySummary } from '../entities/dailySummary.entity';
@@ -13,6 +14,20 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('daily-summary')
 export class DailySummaryController {
   constructor(private readonly dailySummaryService: DailySummaryService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Get('period')
+  async getPeriodSummary(
+    @Request() req: any,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ): Promise<DailySummary[]> {
+    return this.dailySummaryService.getPeriodSummary(
+      req.user.sub,
+      new Date(`${startDate}T00:00:00+09:00`),
+      new Date(`${endDate}T00:00:00+09:00`),
+    );
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get(':date')
