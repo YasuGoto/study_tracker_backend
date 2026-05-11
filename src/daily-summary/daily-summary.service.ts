@@ -55,6 +55,26 @@ export class DailySummaryService {
   ) {}
 
   /**
+   * 指定された期間のDailySummaryをDBから取得する
+   * @param userId ユーザーID
+   * @param startDate 開始日
+   * @param endDate 終了日
+   * @returns DailySummary[]
+   */
+  async getPeriodSummary(
+    userId: number,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<DailySummary[]> {
+    const dayStart = this.getJstDayRange(startDate);
+    const dayEnd = this.getJstDayRange(endDate);
+    const summary = await this.dailySummaryRepository.find({
+      where: { userId, date: Between(dayStart.dayStart, dayEnd.dayEnd) },
+    });
+    return summary;
+  }
+
+  /**
    * 指定日のDailySummaryをDBから取得する
    * @param userId ユーザーID
    * @param date 取得したい日付
