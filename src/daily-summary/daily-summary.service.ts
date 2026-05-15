@@ -117,10 +117,7 @@ export class DailySummaryService {
    * @param date 集計したい日付
    * @returns 保存したDailySummary
    */
-  async calculateAndSave(
-    userId: number,
-    date: Date,
-  ): Promise<DailySummary | null> {
+  async calculateAndSave(userId: number, date: Date): Promise<DailySummary> {
     const { dayStart, dayEnd } = this.getJstDayRange(date);
     console.log('dayStart', dayStart);
     console.log('dayEnd', dayEnd);
@@ -153,6 +150,10 @@ export class DailySummaryService {
     } else {
       summary.totalSeconds = totalSeconds;
     }
-    return this.dailySummaryRepository.save(summary);
+    await this.dailySummaryRepository.save(summary);
+    const dateKey = this.toJstDateKey(date);
+    const cacheKey = `daily-summary:${userId}:${dateKey}`;
+    await this.cacheManager.del(cacheKey);
+    return summary;
   }
 }
