@@ -25,3 +25,6 @@
 - `GET /daily-summary/:date` - 日次サマリー取得
 - `POST /daily-summary` - 日次サマリー集計・保存
 - `GET /daily-summary/period` - 期間指定サマリー取得
+
+## シーケンス図
+<img width="1440" height="2320" alt="image" src="https://github.com/user-attachments/assets/04749b22-1a12-4bb6-bf21-8aa50eb5f1d4" />
